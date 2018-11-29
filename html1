@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Download</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style type="text/css">
+		body {
+			background-color: #e8e8e8;
+			font: 14px/1.2em "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+			/*text-align:center;*/
+			font-family:"Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+			font-size:1em;
+			line-height:1.6em;
+			color:#44a51c;
+			background-color:#fff;
+			background-position:0;
+			margin:0;
+		}
+
+		.list{
+			margin:0 auto;
+			width:75%;
+		}
+
+		tbody tr:nth-child(odd) td {
+			background-color:rgba(0,0,0,0.02)
+		}
+
+		tbody tr:first-child {
+			border-bottom: none;
+		}
+		tbody tr {
+			height: 30px;
+			border-bottom: 1px solid #D3D7CF;
+		}
+
+		table {
+			max-width: 100%;
+			background-color: transparent;
+			border-collapse: collapse;
+			border-spacing: 0;
+			width: 100%;
+			margin-bottom: 2em;
+			font-size: .98em
+		}
+
+		table th, table td {
+			padding: 5px;
+			line-height: 1.6em;
+			text-align: left;
+			vertical-align: top;
+			border-top: 1px solid #d3d7cf;
+		}
+
+		tr:first-child th, tr:first-child td {
+			border-top: 0
+		}
+
+		tr:nth-child(2) {
+			display: none
+		}
+
+		th {
+			margin: 0;
+			font-weight: normal!important;
+			color: #44A51C!important;
+			text-rendering: optimizelegibility;
+			text-shadow: 0 1px 0 white;
+			font-size: 1.2em
+		}
+
+		a {
+			color: #44a51c;
+			text-decoration: none;
+		}
+
+		a:hover {
+			color:#00407a;
+			text-decoration:underline;
+		}
+
+		h1,h2,h3,h4,h5,h6 {
+			font-family:"Open Sans Light","Helvetica Neue",Helvetica,Arial,sans-serif;
+			font-weight:400;
+			color:#204a87;
+			text-shadow:0 1px 0 #fff;
+			margin:0;
+		}
+
+		h1 {
+			font-size:2em;
+			line-height:2.56em;
+		}
+
+		h2 {
+			font-size:1.8em;
+			line-height:2.56em;
+		}
+
+		time {
+			position: absolute;
+			top: 0;
+			left: -70px;
+			width: 58px;
+			height: 63px;
+			padding: 17px 0 0 0;
+			text-transform: uppercase;
+			line-height: 0.8em;
+			text-align: center;
+			font-size: 20.78px;
+			color: #aeaaa7;
+			font-weight: bold;
+			display: block;
+			font-weight: normal;
+		}
+
+	</style>
+</head>
+<div class="list">

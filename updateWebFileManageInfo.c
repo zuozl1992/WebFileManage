@@ -148,7 +148,7 @@ void createHtml(char *startPath,char *currentPath)
 	if(fd == -1)
 		return;
 	//复制第一段html内容
-	int fd2 = open("/mnt/htmlfile/html1", O_RDONLY);
+	int fd2 = open("./html1", O_RDONLY);
 	if(fd2 == -1)
 	{
 		close(fd);
@@ -165,7 +165,7 @@ void createHtml(char *startPath,char *currentPath)
 	sprintf(title,"\n<h2>Index of %s </h2>\n",relativePath);
 	write(fd,title,strlen(title));
 	//复制第二段html内容
-	fd2 = open("/mnt/htmlfile/html2", O_RDONLY);
+	fd2 = open("./html2", O_RDONLY);
 	if(fd2 == -1)
 	{
 		close(fd);
@@ -205,7 +205,7 @@ void createHtml(char *startPath,char *currentPath)
 		}
 	}
 	//复制第三份html内容到文件中
-	fd2 = open("/mnt/htmlfile/html3", O_RDONLY);
+	fd2 = open("./html3", O_RDONLY);
 	if(fd2 == -1)
 	{
 		close(fd);
