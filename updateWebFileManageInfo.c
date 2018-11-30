@@ -11,8 +11,6 @@
 
 void addSlash(char *path)
 {
-	if(sizeof(path) - strlen(path) < 2)
-		return;
 	int i = strlen(path);
 	if(path[i-1] == '/')
 		return;
@@ -89,11 +87,10 @@ void addParentInfo(int fd, char *nowPath)
 
 //添加文件表项到html
 //@param fd html文件 文件描述符
-//@param type 是否为文件，1为文件，否则为目录
 //@param path 文件路径
 //@param url 文件https url
 //@param name 文件名
-void addFileInfo(int fd,int type,char * path,char * url,char *name)
+void addFileInfo(int fd,char * path,char * url,char *name)
 {
 	struct stat st;
 	int ret = stat(path,&st);
@@ -108,7 +105,7 @@ void addFileInfo(int fd,int type,char * path,char * url,char *name)
 	char len[10] = "-";	//文件大小
 	char newName[1024];	//文件名
 	strcpy(newName,name);
-	if(type == 1)
+	if(!S_ISDIR(st.st_mode))
 	{
 		//文件
 		if(st.st_size > 1024 * 1024 * 1024)
@@ -124,7 +121,9 @@ void addFileInfo(int fd,int type,char * path,char * url,char *name)
 	{
 		//目录，文件名后边加'/'
 		addSlash(newName);
+		//printf("%s\n",newName);
 	}
+	
 	char allData[2048] = {0};
 	sprintf(allData,
 			"<tr>\n\t<td>\n\t\t<a href=\"%s\">\n\t\t\t%s\n\t\t</a>\n\t</td>\n\t<td align=\"right\">\n\t\t%s\n\t</td>\n\t<td align=\"right\">\n\t\t%s\n\t</td>\n</tr>\n"
@@ -148,7 +147,7 @@ void createHtml(char *startPath,char *currentPath)
 	if(fd == -1)
 		return;
 	//复制第一段html内容
-	int fd2 = open("./html1", O_RDONLY);
+	int fd2 = open("/mnt/htmlfile/html1", O_RDONLY);
 	if(fd2 == -1)
 	{
 		close(fd);
@@ -165,7 +164,7 @@ void createHtml(char *startPath,char *currentPath)
 	sprintf(title,"\n<h2>Index of %s </h2>\n",relativePath);
 	write(fd,title,strlen(title));
 	//复制第二段html内容
-	fd2 = open("./html2", O_RDONLY);
+	fd2 = open("/mnt/htmlfile/html2", O_RDONLY);
 	if(fd2 == -1)
 	{
 		close(fd);
@@ -196,16 +195,32 @@ void createHtml(char *startPath,char *currentPath)
 		{
 			addSlash(filePath);
 			addSlash(url);
-			addFileInfo(fd,0,filePath,url,dir->d_name);
+			addFileInfo(fd,filePath,url,dir->d_name);
 			createHtml(startPath,filePath);
 		}
-		else
+	}
+	DIR *dp2 = opendir(currentPath);
+	if(dp2==NULL)
+		return;
+	struct dirent *dir2;
+	while((dir2=readdir(dp2))!=NULL)
+	{
+		//隐藏文件跳过
+		if(dir2->d_name[0] == '.') continue;
+		//index.html文件跳过
+		if(strcmp(dir2->d_name,"index.html")==0) continue;
+		char url[2048] = {0};
+		sprintf(url,"http://download.zuozl.com%s%s",relativePath,dir2->d_name);
+		char filePath[2048];
+		strcpy(filePath,currentPath);
+		strcat(filePath,dir2->d_name);
+		if(!isDir(filePath))
 		{
-			addFileInfo(fd,1,filePath,url,dir->d_name);
+			addFileInfo(fd,filePath,url,dir2->d_name);
 		}
 	}
 	//复制第三份html内容到文件中
-	fd2 = open("./html3", O_RDONLY);
+	fd2 = open("/mnt/htmlfile/html3", O_RDONLY);
 	if(fd2 == -1)
 	{
 		close(fd);
@@ -213,9 +228,9 @@ void createHtml(char *startPath,char *currentPath)
 	}
 	copy(fd,fd2);
 	close(fd2);
-	//修改文件权限，其他人可读 664
+	//修改文件权限，其他人可读 644
 	mode_t mod;
-	mod =  S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH;
+	mod =  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH;
 	fchmod(fd,mod);
 	close(fd);
 	closedir(dp);
@@ -293,17 +308,45 @@ void createMd5sumFile(char *path)
 
 int main(int argc,char **argv)
 {
-	if(argc < 2)
+	if(argc < 3)
 	{
-		printf("Please input create path.");
-		return 0;
+		printf("Please input create path and cmd.\n    $ updateWebFileManage -cmd path\n       cmd:\n\t  -all\n\t  -md5\n\t  -html\n");
+		return -1;
 	}
 	char path[1024];
-	strcpy(path,argv[1]);
-	addSlash(path);
-	//生成MD校验和文件
-	createMd5sumFile(path);
-	//生成html文件
-	createHtml(path,path);
+	char cmdType = 0x00;
+	if(argv[1][0] == '-')
+	{
+		if(strcmp(argv[1],"-md5")==0)
+			cmdType = 0x01;
+		else if(strcmp(argv[1],"-html")==0)
+			cmdType = 0x10;
+		else
+			cmdType = 0x11;
+		strcpy(path,argv[2]);
+		addSlash(path);
+	}
+	else if(argv[2][0] == '-')
+	{
+		if(strcmp(argv[2],"-md5")==0)
+			cmdType = 0x01;
+		else if(strcmp(argv[2],"-html")==0)
+			cmdType = 0x10;
+		else
+			cmdType = 0x11;
+		strcpy(path,argv[1]);
+		addSlash(path);
+	}
+	else
+	{
+		printf("Cmd error.\n    $ updateWebFileManage -cmd path\n       cmd:\n\t  -all\n\t  -md5\n\t  -html\n");
+		return -1;
+	}
+	if(cmdType & 0x01)
+		//生成MD校验和文件
+		createMd5sumFile(path);
+	if(cmdType & 0x10)
+		//生成html文件
+		createHtml(path,path);
 	return 0;
 }
