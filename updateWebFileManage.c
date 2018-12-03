@@ -8,6 +8,25 @@
 #include <sys/time.h>
 #include <dirent.h>
 #include <time.h>
+#include <stdio.h>
+#include <getopt.h>   //需要包括此头文件
+
+enum {
+    LONGOPT_VAL_TIMEOUT = 257, //注意我们定义的值从257开始，是为了避开短选项
+    LONGOPT_VAL_MPORT
+};
+
+static const char *short_options = "d:mwnh";
+
+static const struct option long_options[] = {
+		{"dir", required_argument, NULL, 'd'},
+        {"md5", no_argument, NULL, 'm'},
+        {"web", no_argument, NULL, 'w'},
+        {"no_rec", no_argument, NULL, 'n'},
+		{"help", no_argument, NULL, 'h'},
+        {NULL, 0, NULL, 0}
+};
+
 
 void addSlash(char *path)
 {
@@ -133,7 +152,7 @@ void addFileInfo(int fd,char * path,char * url,char *name)
 //生成html文件
 //@param startPath 选定的根目录，应当以'/'结尾
 //@param currentPath 当前操作的目录，应当以'/'结尾
-void createHtml(char *startPath,char *currentPath)
+void createHtml(char *startPath,char *currentPath, int isRec)
 {
 	DIR *dp = opendir(currentPath);
 	if(dp==NULL)
@@ -175,7 +194,7 @@ void createHtml(char *startPath,char *currentPath)
 	//如果不是根目录，则生成上级目录链接
 	if(strcmp(startPath,currentPath)!=0){
 		char url[2048] = {0};
-		sprintf(url,"http://download.zuozl.com%s",relativePath);
+		sprintf(url,"https://download.zuozl.com%s",relativePath);
 		addParentInfo(fd,url);
 	}
 	//遍历目录
@@ -187,7 +206,7 @@ void createHtml(char *startPath,char *currentPath)
 		//index.html文件跳过
 		if(strcmp(dir->d_name,"index.html")==0) continue;
 		char url[2048] = {0};
-		sprintf(url,"http://download.zuozl.com%s%s",relativePath,dir->d_name);
+		sprintf(url,"https://download.zuozl.com%s%s",relativePath,dir->d_name);
 		char filePath[2048];
 		strcpy(filePath,currentPath);
 		strcat(filePath,dir->d_name);
@@ -196,7 +215,8 @@ void createHtml(char *startPath,char *currentPath)
 			addSlash(filePath);
 			addSlash(url);
 			addFileInfo(fd,filePath,url,dir->d_name);
-			createHtml(startPath,filePath);
+			if(isRec)
+				createHtml(startPath,filePath,isRec);
 		}
 	}
 	DIR *dp2 = opendir(currentPath);
@@ -210,7 +230,7 @@ void createHtml(char *startPath,char *currentPath)
 		//index.html文件跳过
 		if(strcmp(dir2->d_name,"index.html")==0) continue;
 		char url[2048] = {0};
-		sprintf(url,"http://download.zuozl.com%s%s",relativePath,dir2->d_name);
+		sprintf(url,"https://download.zuozl.com%s%s",relativePath,dir2->d_name);
 		char filePath[2048];
 		strcpy(filePath,currentPath);
 		strcat(filePath,dir2->d_name);
@@ -238,7 +258,7 @@ void createHtml(char *startPath,char *currentPath)
 
 //生成md5文件
 //@param path 选定的根目录，应当以'/'结尾
-void createMd5sumFile(char *path)
+void createMd5sumFile(char *path,int isRec)
 {
 	DIR *dp = opendir(path);
 	if(dp==NULL)
@@ -276,7 +296,8 @@ void createMd5sumFile(char *path)
 		if(isDir(filePath))
 		{
 			addSlash(filePath);
-			createMd5sumFile(filePath);
+			if(isRec)
+				createMd5sumFile(filePath , isRec);
 		}
 		else
 		{
@@ -308,45 +329,47 @@ void createMd5sumFile(char *path)
 
 int main(int argc,char **argv)
 {
-	if(argc < 3)
+	char *dir = NULL;
+	int md5 = 0;
+	int web = 0;
+	int rec = 1;
+
+	int opt = 0;
+	while( (opt = getopt_long(argc, argv, short_options, long_options, NULL)) != -1){
+		switch (opt){
+			case 'h':
+            case '?':
+                printf("Usage: %s -p <port>  [-v|--v <=verbose_level>] [-h]\n", argv[0]);
+                return 0;
+			case 'd': //路径
+                dir = optarg;
+                break;
+			case 'm': 
+                md5 = 1;
+                break;
+			case 'w': 
+                web = 1;
+                break;
+			case 'n': 
+                rec = 0;
+                break;
+        }
+    }
+	if(md5 == 0 && web == 0)
 	{
-		printf("Please input create path and cmd.\n    $ updateWebFileManage -cmd path\n       cmd:\n\t  -all\n\t  -md5\n\t  -html\n");
-		return -1;
+		md5 = 1;
+		web = 1;
 	}
+
 	char path[1024];
-	char cmdType = 0x00;
-	if(argv[1][0] == '-')
-	{
-		if(strcmp(argv[1],"-md5")==0)
-			cmdType = 0x01;
-		else if(strcmp(argv[1],"-html")==0)
-			cmdType = 0x10;
-		else
-			cmdType = 0x11;
-		strcpy(path,argv[2]);
-		addSlash(path);
-	}
-	else if(argv[2][0] == '-')
-	{
-		if(strcmp(argv[2],"-md5")==0)
-			cmdType = 0x01;
-		else if(strcmp(argv[2],"-html")==0)
-			cmdType = 0x10;
-		else
-			cmdType = 0x11;
-		strcpy(path,argv[1]);
-		addSlash(path);
-	}
-	else
-	{
-		printf("Cmd error.\n    $ updateWebFileManage -cmd path\n       cmd:\n\t  -all\n\t  -md5\n\t  -html\n");
-		return -1;
-	}
-	if(cmdType & 0x01)
+	strcpy(path,dir);
+	addSlash(path);
+
+	if(md5)
 		//生成MD校验和文件
-		createMd5sumFile(path);
-	if(cmdType & 0x10)
+		createMd5sumFile(path,rec);
+	if(web)
 		//生成html文件
-		createHtml(path,path);
+		createHtml(path,path,rec);
 	return 0;
 }
