@@ -9,22 +9,23 @@
 #include <dirent.h>
 #include <time.h>
 #include <stdio.h>
-#include <getopt.h>   //需要包括此头文件
+#include <getopt.h>
 
 enum {
-    LONGOPT_VAL_TIMEOUT = 257, //注意我们定义的值从257开始，是为了避开短选项
-    LONGOPT_VAL_MPORT
+    LONGOPT_VAL_NO_MD5_REC = 257,
+    LONGOPT_VAL_NO_WEB_REC
 };
 
-static const char *short_options = "d:mwnh";
+static const char *short_options = "d:mwh";
 
 static const struct option long_options[] = {
-		{"dir", required_argument, NULL, 'd'},
-        {"md5", no_argument, NULL, 'm'},
-        {"web", no_argument, NULL, 'w'},
-        {"no_rec", no_argument, NULL, 'n'},
-		{"help", no_argument, NULL, 'h'},
-        {NULL, 0, NULL, 0}
+			{"dir", required_argument, NULL, 'd'},
+			{"md5", no_argument, NULL, 'm'},
+			{"web", no_argument, NULL, 'w'},
+			{"no_md5_rec", no_argument, NULL, LONGOPT_VAL_NO_MD5_REC},
+			{"no_web_rec", required_argument, NULL, LONGOPT_VAL_NO_WEB_REC},
+			{"help", no_argument, NULL, 'h'},
+			{NULL, 0, NULL, 0}
 };
 
 
@@ -332,14 +333,22 @@ int main(int argc,char **argv)
 	char *dir = NULL;
 	int md5 = 0;
 	int web = 0;
-	int rec = 1;
+	int webRec = 1;
+	int md5Rec = 1;
+	char *startDir = NULL;
 
 	int opt = 0;
 	while( (opt = getopt_long(argc, argv, short_options, long_options, NULL)) != -1){
 		switch (opt){
 			case 'h':
             case '?':
-                printf("Usage: %s -p <port>  [-v|--v <=verbose_level>] [-h]\n", argv[0]);
+                printf("Usage: updateWebFileManage -d <path> [OPTION]... [FILE]... \n\n" \
+				"   -d --dir <path>\t\tWeb file manage create path.\n" \
+				"   -w --web\t\t\tOnly create index.html file.\n" \
+				"   -m --md5\t\t\tOnly create md5sum.txt file.\n" \
+				"      --no_web_rec <startPath>\tOnly create index.html in top path.\n" \
+				"      --no_md5_rec\t\tOnly create md5sum.txt in top path.\n" \
+				"   -h --help\t\t\tHelp info.\n");
                 return 0;
 			case 'd': //路径
                 dir = optarg;
@@ -350,11 +359,28 @@ int main(int argc,char **argv)
 			case 'w': 
                 web = 1;
                 break;
-			case 'n': 
-                rec = 0;
+			case LONGOPT_VAL_NO_WEB_REC: 
+                webRec = 0;
+				startDir = optarg;
+                break;
+			case LONGOPT_VAL_NO_MD5_REC: 
+                md5Rec = 0;
                 break;
         }
     }
+
+	if(dir == NULL)
+	{
+		printf("Usage: updateWebFileManage -d <path> [OPTION]... [FILE]... \n\n" \
+				"   -d --dir <path>\t\tWeb file manage create path.\n" \
+				"   -w --web\t\t\tOnly create index.html file.\n" \
+				"   -m --md5\t\t\tOnly create md5sum.txt file.\n" \
+				"      --no_web_rec <startPath>\tOnly create index.html in top path.\n" \
+				"      --no_md5_rec\t\tOnly create md5sum.txt in top path.\n" \
+				"   -h --help\t\t\tHelp info.\n");
+		return 0;
+	}
+
 	if(md5 == 0 && web == 0)
 	{
 		md5 = 1;
@@ -365,11 +391,15 @@ int main(int argc,char **argv)
 	strcpy(path,dir);
 	addSlash(path);
 
+	char startPath[1024];
+	strcpy(startPath,startDir == NULL ? path : startDir);
+	addSlash(startPath);
+
 	if(md5)
 		//生成MD校验和文件
-		createMd5sumFile(path,rec);
+		createMd5sumFile(path,md5Rec);
 	if(web)
 		//生成html文件
-		createHtml(path,path,rec);
+		createHtml(path,startPath,webRec);
 	return 0;
 }
