@@ -400,6 +400,6 @@ int main(int argc,char **argv)
 		createMd5sumFile(path,md5Rec);
 	if(web)
 		//生成html文件
-		createHtml(path,startPath,webRec);
+		createHtml(startPath,path,webRec);
 	return 0;
 }
